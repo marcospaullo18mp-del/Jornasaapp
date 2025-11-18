@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { Plus, Search, FileText, Users, BookOpen, User, Bell, Clock, Edit2, Trash2, X } from 'lucide-react';
 
 const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasChange, filterStatus, onFilterStatusChange, getDaysUntilDeadline, getStatusColor, openModal, deletePauta }) => (
@@ -369,6 +369,25 @@ const JornalismoApp = () => {
   const [searchTermFontes, setSearchTermFontes] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [formData, setFormData] = useState({});
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      titulo: 'Deadline amanhã',
+      descricao: 'A matéria política local vence em 24h.',
+      read: false,
+      data: 'Hoje'
+    },
+    {
+      id: 2,
+      titulo: 'Fonte respondeu',
+      descricao: 'Maria Santos retornou com novos dados.',
+      read: false,
+      data: 'Ontem'
+    }
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationButtonRef = useRef(null);
+  const notificationPanelRef = useRef(null);
 
   const handleSetSearchTermPautas = useCallback((value) => {
     setSearchTermPautas(value);
@@ -392,6 +411,38 @@ const JornalismoApp = () => {
   const updateField = useCallback((field, value) => {
     setFormData(prev => ({...prev, [field]: value}));
   }, []);
+
+  const toggleNotifications = useCallback(() => {
+    setShowNotifications(prev => !prev);
+  }, []);
+
+  const markNotificationAsRead = useCallback((id) => {
+    setNotifications(prev => prev.map(notification => 
+      notification.id === id ? { ...notification, read: true } : notification
+    ));
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+  }, []);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+
+    const handleClickOutside = (event) => {
+      if (
+        notificationPanelRef.current &&
+        !notificationPanelRef.current.contains(event.target) &&
+        notificationButtonRef.current &&
+        !notificationButtonRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
 
   const savePauta = useCallback(() => {
     const novaPauta = {
@@ -449,6 +500,65 @@ const JornalismoApp = () => {
     const diff = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
     return diff;
   }, []);
+
+  const syncWithGoogleCalendar = useCallback(() => {
+    if (!pautas.length) {
+      alert('Cadastre pelo menos uma pauta para exportar para a agenda.');
+      return;
+    }
+
+    const toICSDate = (dateObj) => dateObj.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const deadlineToDate = (deadline, hour = 9) => {
+      if (!deadline) return null;
+      const dt = new Date(`${deadline}T${String(hour).padStart(2, '0')}:00:00`);
+      return toICSDate(dt);
+    };
+
+    const dtStamp = toICSDate(new Date());
+
+    const events = pautas
+      .map(pauta => {
+        const start = deadlineToDate(pauta.deadline, 9);
+        if (!start) return null;
+        const end = deadlineToDate(pauta.deadline, 10);
+        return [
+          'BEGIN:VEVENT',
+          `UID:${pauta.id}@jornasa`,
+          `DTSTAMP:${dtStamp}`,
+          `DTSTART:${start}`,
+          `DTEND:${end}`,
+          `SUMMARY:${pauta.titulo || 'Pauta'}`,
+          `DESCRIPTION:${(pauta.descricao || '').replace(/\n/g, '\\n')}`,
+          'END:VEVENT'
+        ].join('\n');
+      })
+      .filter(Boolean)
+      .join('\n');
+
+    if (!events) {
+      alert('Nenhuma pauta possui deadline para enviar à agenda.');
+      return;
+    }
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Jornasa//Pautas//PT-BR',
+      'CALSCALE:GREGORIAN',
+      events,
+      'END:VCALENDAR'
+    ].join('\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'pautas-jornasa.ics';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [pautas]);
 
   const openModal = useCallback((type, item = null) => {
     setModalType(type);
@@ -529,11 +639,11 @@ const JornalismoApp = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow divide-y">
-        <button className="w-full text-left py-4 px-4 hover:bg-gray-50 transition flex items-center gap-3">
+        <button onClick={toggleNotifications} className="w-full text-left py-4 px-4 hover:bg-gray-50 transition flex items-center gap-3">
           <Bell size={20} className="text-gray-600" />
           <span>Notificações</span>
         </button>
-        <button className="w-full text-left py-4 px-4 hover:bg-gray-50 transition flex items-center gap-3">
+        <button onClick={syncWithGoogleCalendar} className="w-full text-left py-4 px-4 hover:bg-gray-50 transition flex items-center gap-3">
           <FileText size={20} className="text-gray-600" />
           <span>Sincronizar Google Agenda</span>
         </button>
@@ -545,19 +655,73 @@ const JornalismoApp = () => {
     </div>
   );
 
-  
+  const unreadCount = notifications.filter(notification => !notification.read).length;
+  const hasUnreadNotifications = unreadCount > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-jorna-600 to-jorna-700 text-white p-4 shadow-lg">
-        <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <img src="/logo-jornasa.png" alt="Jornasa" className="w-8 h-8 rounded-full bg-white p-1" />
+        <div className="flex items-center justify-between max-w-6xl mx-auto px-4 relative">
+          <h1 className="text-xl font-bold flex items-center gap-3">
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img src="/logo-jornasa.png" alt="Jornasa" className="w-16 h-16 object-contain" />
+            </div>
             <span className="sr-only">JornaApp</span>
           </h1>
-          <button className="hover:bg-jorna-500 p-2 rounded-full transition">
-            <Bell size={22} />
-          </button>
+          <div className="relative">
+            <button
+              ref={notificationButtonRef}
+              onClick={toggleNotifications}
+              className="hover:bg-jorna-500 p-2 rounded-full transition relative focus:outline-none focus:ring-2 focus:ring-white/60"
+              aria-label="Abrir notificações"
+            >
+              <Bell size={22} />
+              {hasUnreadNotifications && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-semibold rounded-full px-1.5">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div
+                ref={notificationPanelRef}
+                className="absolute right-0 mt-3 w-72 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <span className="font-semibold text-jorna-brown">Notificações</span>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={markAllNotificationsAsRead}
+                      className="text-xs text-jorna-500 hover:text-jorna-700 font-medium"
+                    >
+                      Marcar todas
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length ? (
+                    notifications.map(notification => (
+                      <button
+                        key={notification.id}
+                        onClick={() => markNotificationAsRead(notification.id)}
+                        className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 ${
+                          notification.read ? 'bg-white' : 'bg-jorna-50'
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-jorna-700">{notification.titulo}</p>
+                        <p className="text-xs text-gray-600 mt-1">{notification.descricao}</p>
+                        <span className="text-[11px] text-gray-400 mt-2 inline-block">{notification.data}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-6 text-center text-sm text-gray-500">
+                      Nenhuma notificação por aqui.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
