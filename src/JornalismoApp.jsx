@@ -254,7 +254,7 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, l
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
-          Inteligência artificial de alto nível treinada para jornalistas
+          Inteligência Artificial de alto nível treinada para Jornalistas
         </p>
       </div>
     </div>
