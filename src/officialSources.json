@@ -1,0 +1,44 @@
+[
+  {
+    "id": "pf",
+    "nome": "Polícia Federal",
+    "dominios": ["pf.gov.br", "policiafederal.gov.br"],
+    "tipo": "federal",
+    "categoria": "seguranca"
+  },
+  {
+    "id": "pc-sp",
+    "nome": "Polícia Civil de São Paulo",
+    "dominios": ["policiacivil.sp.gov.br"],
+    "tipo": "estadual",
+    "categoria": "seguranca"
+  },
+  {
+    "id": "pm-sp",
+    "nome": "Polícia Militar de São Paulo",
+    "dominios": ["www.policiamilitar.sp.gov.br", "policiamilitar.sp.gov.br"],
+    "tipo": "estadual",
+    "categoria": "seguranca"
+  },
+  {
+    "id": "mj-sp",
+    "nome": "Ministério da Justiça",
+    "dominios": ["www.justica.gov.br", "mj.gov.br"],
+    "tipo": "federal",
+    "categoria": "ministerio"
+  },
+  {
+    "id": "saude",
+    "nome": "Ministério da Saúde",
+    "dominios": ["saude.gov.br", "gov.br"],
+    "tipo": "federal",
+    "categoria": "ministerio"
+  },
+  {
+    "id": "economia",
+    "nome": "Ministério da Fazenda",
+    "dominios": ["fazenda.gov.br", "gov.br"],
+    "tipo": "federal",
+    "categoria": "ministerio"
+  }
+]
