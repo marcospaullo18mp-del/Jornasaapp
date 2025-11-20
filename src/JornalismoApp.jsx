@@ -12,7 +12,7 @@ const officialDomainSuffixes = [
   '.tc.br'
 ];
 
-const ACOLHEIA_API_URL = import.meta.env.VITE_ACOLHEIA_API_URL || 'http://localhost:8000/mensagem';
+const ACOLHEIA_API_URL = import.meta.env.VITE_ACOLHEIA_API_URL || 'https://benjamin-hourless-francene.ngrok-free.dev';
 const ACOLHEIA_API_KEY = import.meta.env.VITE_ACOLHEIA_KEY || '';
 
 const stripHtml = (text = '') =>
@@ -65,13 +65,15 @@ const mockUsers = [
     iniciais: 'AR'
   }
 ];
+const STORAGE_KEY = 'jornabot:user';
+const CURRENT_USER_KEY = 'jernasa:user';
 
 const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasChange, filterStatus, onFilterStatusChange, getDaysUntilDeadline, getStatusColor, openModal, deletePauta }) => (
-  <div className="p-4 pb-20">
+  <div className="p-4 pb-24 sm:pb-20">
     <div className="mb-6">
       <h1 className="text-2xl font-bold text-jorna-brown mb-4">Minhas Pautas</h1>
-      <div className="flex gap-2 mb-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <input
             type="text"
@@ -82,7 +84,7 @@ const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasCha
           />
         </div>
         <select 
-          className="px-4 py-2 border rounded-lg bg-white"
+          className="px-4 py-2 border rounded-lg bg-white w-full sm:w-auto"
           value={filterStatus}
           onChange={(e) => onFilterStatusChange(e.target.value)}
         >
@@ -99,9 +101,9 @@ const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasCha
         const daysLeft = getDaysUntilDeadline(pauta.deadline);
         return (
           <div key={pauta.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-jorna-500">
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-start mb-2 gap-3 flex-col sm:flex-row">
               <h3 className="font-semibold text-lg flex-1">{pauta.titulo}</h3>
-              <div className="flex gap-2 ml-2">
+              <div className="flex gap-2 ml-0 sm:ml-2">
                 <button onClick={() => openModal('pauta', pauta)} className="text-jorna-500 hover:text-jorna-700">
                   <Edit2 size={18} />
                 </button>
@@ -110,8 +112,8 @@ const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasCha
                 </button>
               </div>
             </div>
-            <p className="text-gray-600 text-sm mb-3">{pauta.descricao}</p>
-            <div className="flex justify-between items-center flex-wrap gap-2">
+            <p className="text-gray-600 text-sm mb-3 break-words">{pauta.descricao}</p>
+            <div className="flex justify-between items-center flex-wrap gap-2 flex-col sm:flex-row">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(pauta.status)}`}>
                 {pauta.status.replace('-', ' ')}
               </span>
@@ -129,7 +131,7 @@ const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasCha
 
     <button
       onClick={() => openModal('pauta')}
-      className="fixed bottom-20 right-6 bg-jorna-500 text-white rounded-full p-4 shadow-lg hover:bg-jorna-600 transition"
+      className="fixed bottom-24 right-4 sm:bottom-20 sm:right-6 bg-jorna-500 text-white rounded-full p-4 shadow-lg hover:bg-jorna-600 transition"
     >
       <Plus size={24} />
     </button>
@@ -137,7 +139,7 @@ const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasCha
 ));
 
 const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes, openModal, deleteFonte }) => (
-  <div className="p-4 pb-20">
+  <div className="p-4 pb-24 sm:pb-20">
     <div className="mb-6">
       <h1 className="text-2xl font-bold text-jorna-brown mb-4">Banco de Fontes</h1>
       <div className="relative">
@@ -155,8 +157,8 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
     <div className="space-y-3">
       {filteredFontes.map(fonte => (
         <div key={fonte.id} className="bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex-1">
+          <div className="flex justify-between items-start mb-2 gap-2 flex-col sm:flex-row">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold">{fonte.nome}</h3>
                 {fonte.oficial && (
@@ -167,7 +169,7 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
               </div>
               <p className="text-gray-600 text-sm mt-1">{fonte.cargo}</p>
             </div>
-            <div className="flex gap-2 ml-2">
+            <div className="flex gap-2 ml-0 sm:ml-2">
               <button onClick={() => openModal('fonte', fonte)} className="text-jorna-500 hover:text-jorna-700">
                 <Edit2 size={18} />
               </button>
@@ -188,7 +190,7 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
 
     <button
       onClick={() => openModal('fonte')}
-      className="fixed bottom-20 right-6 bg-jorna-500 text-white rounded-full p-4 shadow-lg hover:bg-jorna-600 transition"
+      className="fixed bottom-24 right-4 sm:bottom-20 sm:right-6 bg-jorna-500 text-white rounded-full p-4 shadow-lg hover:bg-jorna-600 transition"
     >
       <Plus size={24} />
     </button>
@@ -198,18 +200,18 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
 const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, loading }) => (
   <div className="p-4 pb-20">
     <div className="mb-6 text-center">
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-jorna-500 to-jorna-600 text-white mb-3">
-        <MessageCircle size={28} />
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-3">
+        <img src="/4.png" alt="JornaBot" className="w-full h-full object-cover rounded-full" />
       </div>
       <h1 className="text-2xl font-bold text-jorna-brown">JornaBot</h1>
       <p className="text-gray-600 text-sm">Seu assistente para organizar pautas, fontes e insights em tempo real.</p>
     </div>
 
     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col min-h-[60vh]">
-      <div className="flex-1 bg-gradient-to-b from-jorna-50/60 to-white p-4 space-y-3 overflow-y-auto">
+      <div className="flex-1 bg-gradient-to-b from-jorna-50/60 to-white p-4 space-y-3 overflow-y-auto max-h-[60vh]">
         {messages.map(message => (
           <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+            <div className={`max-w-full sm:max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
               message.role === 'user' ? 'bg-jorna-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border'
             }`}>
               {message.role === 'bot' && (
@@ -230,7 +232,7 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, l
         ))}
       </div>
       <div className="p-4 border-t bg-white">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="text"
             value={chatInput}
@@ -242,13 +244,13 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, l
               }
             }}
             placeholder="Conte como posso ajudar suas pautas..."
-            className="flex-1 px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-jorna-500 outline-none bg-gray-50"
+            className="flex-1 px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-jorna-500 outline-none bg-gray-50 w-full"
             disabled={loading}
           />
           <button
             onClick={onSendMessage}
             disabled={loading || !chatInput.trim()}
-            className="bg-jorna-600 text-white px-5 py-3 rounded-2xl font-semibold shadow hover:bg-jorna-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-jorna-600 text-white px-5 py-3 rounded-2xl font-semibold shadow hover:bg-jorna-700 disabled:bg-gray-300 disabled:cursor-not-allowed w-full sm:w-auto"
           >
             {loading ? 'Enviando...' : 'Enviar'}
           </button>
@@ -649,6 +651,21 @@ const JornalismoApp = () => {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          setCurrentUser(parsed);
+        }
+      }
+    } catch (error) {
+      console.warn('Nao foi possivel carregar usuario salvo', error);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
   const updateField = useCallback((field, value) => {
     setFormData(prev => ({...prev, [field]: value}));
   }, []);
@@ -664,12 +681,19 @@ const JornalismoApp = () => {
       return;
     }
 
-    setCurrentUser({
+    const loggedUser = {
       id: user.id,
       nome: user.nome,
       email: user.email,
-      iniciais: user.iniciais
-    });
+      iniciais: user.iniciais,
+      avatarUrl: user.avatarUrl || null,
+    };
+    setCurrentUser(loggedUser);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
+    } catch (error) {
+      console.warn('Nao foi possivel salvar usuario no localStorage', error);
+    }
     setAuthEmail('');
     setAuthPassword('');
     setAuthError('');
@@ -715,12 +739,19 @@ const JornalismoApp = () => {
     };
 
     setUsers((prev) => [...prev, newUser]);
-    setCurrentUser({
+    const savedUser = {
       id: newUser.id,
       nome: newUser.nome,
       email: newUser.email,
-      iniciais: newUser.iniciais
-    });
+      iniciais: newUser.iniciais,
+      avatarUrl: null,
+    };
+    setCurrentUser(savedUser);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
+    } catch (error) {
+      console.warn('Nao foi possivel salvar usuario no localStorage', error);
+    }
     setIsRegistering(false);
     setAuthEmail('');
     setAuthPassword('');
@@ -746,6 +777,11 @@ const JornalismoApp = () => {
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.warn('Nao foi possivel limpar usuario salvo', error);
+    }
     setAuthEmail('');
     setAuthPassword('');
     setAuthConfirmPassword('');
@@ -769,7 +805,17 @@ const JornalismoApp = () => {
           user.id === currentUser.id ? { ...user, avatarUrl: dataUrl || null } : user
         )
       );
-      setCurrentUser(prev => (prev ? { ...prev, avatarUrl: dataUrl || null } : prev));
+      setCurrentUser(prev => {
+        const updated = prev ? { ...prev, avatarUrl: dataUrl || null } : prev;
+        if (updated) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          } catch (error) {
+            console.warn('Nao foi possivel atualizar avatar no localStorage', error);
+          }
+        }
+        return updated;
+      });
       setShowProfileMenu(false);
       if (event.target) {
         event.target.value = '';
@@ -1251,8 +1297,8 @@ const JornalismoApp = () => {
       <h1 className="text-2xl font-bold text-jorna-brown mb-6">Perfil</h1>
       
       <div className="bg-white rounded-lg shadow p-6 mb-4">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold bg-gradient-to-br from-jorna-500 to-jorna-600 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 text-center sm:text-left">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold bg-gradient-to-br from-jorna-500 to-jorna-600 overflow-hidden mx-auto sm:mx-0">
             {currentUser?.avatarUrl ? (
               <img src={currentUser.avatarUrl} alt={currentUser?.nome || 'Foto de perfil'} className="w-full h-full object-cover" />
             ) : (
@@ -1315,10 +1361,10 @@ const JornalismoApp = () => {
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-jorna-600 to-jorna-800 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-20 h-20 rounded-full bg-jorna-100 flex items-center justify-center">
-              <img src="/logo-jornasa.png" alt="Jornasa" className="w-16 h-16 object-contain" />
+            <div className="flex items-center justify-center">
+              <img src="/3.png" alt="Jornasa" className="w-24 h-24 object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-jorna-brown text-center">Bem-vindo ao Jornasa</h1>
             <p className="text-gray-600 text-center text-sm">Acesse sua conta para gerenciar pautas e fontes.</p>
@@ -1405,26 +1451,28 @@ const JornalismoApp = () => {
   const canUseWebShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-20">
       <div className="bg-gradient-to-r from-jorna-600 to-jorna-700 text-white p-4 shadow-lg">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <img src="/logo-jornasa.png" alt="Jornasa" className="w-16 h-16 object-contain" />
+          <div className="flex flex-col gap-6 text-center md:flex-row md:items-center md:justify-between md:text-left">
+            <div className="flex items-center justify-center md:justify-start w-full md:w-auto md:pl-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
+                <img src="/2.png" alt="Jornasa" className="w-full h-full object-contain" />
+              </div>
             </div>
-            <div className="text-center flex-1">
-              <h1 className="text-2xl font-bold">Olá, amorecos!</h1>
-              <p className="text-sm text-white/80">Bem-vindo(a) de volta.</p>
+            <div className="flex flex-col items-center justify-center gap-0.5 flex-1 text-center">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Olá, amorecos!</h1>
+              <p className="text-xs md:text-sm text-white/80">Bem-vindo(a) de volta.</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center md:justify-end gap-4 w-full md:w-auto">
               <div className="relative">
                   <button
                     ref={notificationButtonRef}
                     onClick={toggleNotifications}
-                  className="hover:bg-jorna-500 p-2 rounded-full transition relative focus:outline-none focus:ring-2 focus:ring-white/60"
+                  className="hover:bg-jorna-500 p-1.5 rounded-full transition relative focus:outline-none focus:ring-2 focus:ring-white/60"
                   aria-label="Abrir notificações"
                 >
-                  <Bell size={22} />
+                  <Bell size={18} />
                   {hasUnreadNotifications && (
                     <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-semibold rounded-full px-1.5">
                       {unreadCount}
@@ -1434,7 +1482,7 @@ const JornalismoApp = () => {
                 {showNotifications && (
                   <div
                     ref={notificationPanelRef}
-                    className="absolute right-0 mt-3 w-72 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                    className="absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-3 w-64 sm:w-72 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                       <span className="font-semibold text-jorna-brown">Notificações</span>
@@ -1471,7 +1519,7 @@ const JornalismoApp = () => {
                   </div>
                 )}
               </div>
-              <div className="relative flex flex-col items-center text-center text-white">
+              <div className="relative flex flex-col items-center text-center text-white gap-1">
                 <input
                   ref={quickAvatarInputRef}
                   type="file"
@@ -1482,16 +1530,16 @@ const JornalismoApp = () => {
                 <button
                   ref={profileButtonRef}
                   onClick={toggleProfileMenu}
-                  className="flex flex-col items-center focus:outline-none"
+                  className="flex flex-col items-center gap-1 focus:outline-none"
                 >
-                  <div className="w-12 h-12 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white text-lg font-semibold overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white text-base font-semibold overflow-hidden">
                     {currentUser?.avatarUrl ? (
                       <img src={currentUser.avatarUrl} alt={currentUser.nome} className="w-full h-full object-cover" />
                     ) : (
                       currentUser?.iniciais || 'JA'
                     )}
                   </div>
-                  <span className="text-xs font-semibold mt-1">
+                  <span className="text-sm font-semibold">
                     {profileHeaderName || 'Perfil'}
                   </span>
                 </button>
@@ -1499,7 +1547,7 @@ const JornalismoApp = () => {
                 {showProfileMenu && (
                   <div
                     ref={profilePanelRef}
-                    className="absolute right-0 mt-3 w-64 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                    className="absolute left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 mt-3 w-64 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
                   >
                     <div className="px-4 py-3 border-b bg-jorna-50">
                       <p className="text-sm text-gray-500">Logado como</p>
@@ -1535,7 +1583,7 @@ const JornalismoApp = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto pb-16">
+      <div className="max-w-6xl mx-auto pb-16 px-4">
         {currentView === 'home' && <HomeView filteredPautas={filteredPautas} searchTermPautas={searchTermPautas} onSearchTermPautasChange={handleSetSearchTermPautas} filterStatus={filterStatus} onFilterStatusChange={handleSetFilterStatus} getDaysUntilDeadline={getDaysUntilDeadline} getStatusColor={getStatusColor} openModal={openModal} deletePauta={deletePauta} />}
         {currentView === 'chatbot' && (
           <ChatbotView
@@ -1567,7 +1615,7 @@ const JornalismoApp = () => {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-        <div className="flex justify-around p-2 max-w-6xl mx-auto">
+        <div className="flex justify-around p-2 max-w-6xl mx-auto px-2">
           <button
             onClick={() => {setCurrentView('home'); setSearchTermPautas('');}}
             className={`flex flex-col items-center p-2 rounded-lg transition ${currentView === 'home' ? 'text-jorna-600 bg-jorna-50' : 'text-gray-600 hover:bg-gray-50'}`}
