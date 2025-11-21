@@ -201,9 +201,9 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, l
   <div className="p-4 pb-20">
     <div className="mb-6 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-3">
-        <img src="/4.png" alt="JornaBot" className="w-full h-full object-cover rounded-full" />
+        <img src="/avatarchat.png" alt="JornaBot" className="w-full h-full object-cover rounded-full" />
       </div>
-      <h1 className="text-2xl font-bold text-jorna-brown">JornaBot</h1>
+      <h1 className="text-2xl font-bold text-jorna-brown">JornaIA</h1>
       <p className="text-gray-600 text-sm">Seu assistente para organizar pautas, fontes e insights em tempo real.</p>
     </div>
 
