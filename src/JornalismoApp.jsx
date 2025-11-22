@@ -1633,11 +1633,11 @@ const JornalismoApp = () => {
               <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Olá, amorecos!</h1>
               <p className="text-xs md:text-sm text-white/80">Bem-vindo(a) de volta.</p>
             </div>
-            <div className="flex items-center justify-end gap-3 w-1/4 md:w-1/4">
-              <div className="relative">
-                  <button
-                    ref={notificationButtonRef}
-                    onClick={toggleNotifications}
+            <div className="flex items-start md:items-center justify-end gap-3 w-1/4 md:w-1/4">
+              <div className="relative mt-4 md:mt-0">
+                <button
+                  ref={notificationButtonRef}
+                  onClick={toggleNotifications}
                   className="hover:bg-jorna-500 p-1.5 rounded-full transition relative focus:outline-none focus:ring-2 focus:ring-white/60"
                   aria-label="Abrir notificações"
                 >
