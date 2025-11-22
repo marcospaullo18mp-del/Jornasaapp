@@ -590,6 +590,7 @@ const JornalismoApp = () => {
   const profilePanelRef = useRef(null);
   const quickAvatarInputRef = useRef(null);
   const profileAvatarInputRef = useRef(null);
+  const googleButtonRef = useRef(null);
   const chatRequestController = useRef(null);
   const chatCacheRef = useRef(new Map());
   const pendingBotIdRef = useRef(null);
@@ -758,6 +759,87 @@ const JornalismoApp = () => {
     setAuthConfirmPassword('');
     setAuthName('');
   }, [authName, authEmail, authPassword, authConfirmPassword, users]);
+
+  const handleGoogleCredential = useCallback((credential) => {
+    if (!credential) {
+      setAuthError('Não foi possível usar o login Google.');
+      return;
+    }
+
+    try {
+      const payloadBase64 = credential.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = payloadBase64 ? JSON.parse(atob(payloadBase64)) : null;
+      if (!payload?.email) {
+        setAuthError('Não foi possível validar o Google.');
+        return;
+      }
+
+      const name = payload.name || payload.email || 'Conta Google';
+      const email = payload.email.toLowerCase();
+      const initials =
+        name
+          .split(' ')
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((n) => n[0]?.toUpperCase())
+          .join('') || 'GG';
+
+      const loggedUser = {
+        id: payload.sub || `google-${Date.now()}`,
+        nome: name,
+        email,
+        iniciais: initials,
+        avatarUrl: payload.picture || null,
+      };
+
+      setCurrentUser(loggedUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
+      setAuthError('');
+    } catch (error) {
+      console.warn('Erro ao processar credential do Google', error);
+      setAuthError('Não foi possível validar o Google.');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!googleButtonRef.current) return;
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const renderButton = () => {
+      if (!window.google?.accounts?.id) return;
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (res) => handleGoogleCredential(res?.credential),
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        type: 'standard',
+      });
+    };
+
+    if (window.google?.accounts?.id) {
+      renderButton();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderButton;
+    document.head.appendChild(script);
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, [handleGoogleCredential]);
 
   const handleAuthSubmit = useCallback((event) => {
     event?.preventDefault?.();
@@ -1428,6 +1510,16 @@ const JornalismoApp = () => {
             >
               {isRegistering ? 'Criar conta' : 'Entrar'}
             </button>
+            <div className="mt-4">
+              <div className="flex items-center gap-2 my-3">
+                <span className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs text-gray-500">ou</span>
+                <span className="h-px flex-1 bg-gray-200" />
+              </div>
+              <div className="flex justify-center">
+                <div ref={googleButtonRef} className="flex justify-center" />
+              </div>
+            </div>
           </form>
           <p className="text-center text-sm text-gray-600 mt-4">
             {isRegistering ? 'Já tem uma conta?' : 'Ainda não tem uma conta?'}{' '}
