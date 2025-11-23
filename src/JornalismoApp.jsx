@@ -87,6 +87,13 @@ const buildChatTitle = (messages = []) => {
   }
   return 'Conversa';
 };
+const buildChatPreview = (messages = []) => {
+  const lastMessage = [...messages].reverse().find(m => m.content);
+  if (!lastMessage) return '';
+  const text = typeof lastMessage.content === 'string' ? lastMessage.content : stripHtml(lastMessage.content);
+  return text.slice(0, 80);
+};
+const limitHistory = (history = [], max = 20) => history.slice(0, max);
 
 const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasChange, filterStatus, onFilterStatusChange, getDaysUntilDeadline, getStatusColor, openModal, deletePauta }) => (
   <div className="p-4 pb-24 sm:pb-20">
@@ -623,6 +630,7 @@ const JornalismoApp = () => {
   const copyTemplateTimeoutRef = useRef(null);
   const [copiedTemplateId, setCopiedTemplateId] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState(Date.now());
   const [chatMessages, setChatMessages] = useState([
     ...getDefaultChatMessages()
   ]);
@@ -707,6 +715,7 @@ const JornalismoApp = () => {
 
       const savedHistory = localStorage.getItem(makeUserKey(userId, 'chatHistory'));
       setChatHistory(savedHistory ? JSON.parse(savedHistory) : []);
+      setCurrentChatId(Date.now());
     } catch (error) {
       console.warn('Nao foi possivel carregar dados do usuario', error);
       setPautas(getDefaultPautas());
@@ -714,6 +723,7 @@ const JornalismoApp = () => {
       setTemplates(getDefaultTemplates());
       setChatMessages(getDefaultChatMessages());
       setChatHistory([]);
+      setCurrentChatId(Date.now());
     }
   }, []);
 
@@ -1029,20 +1039,23 @@ const JornalismoApp = () => {
     if (chatMessages.length > 1) {
       const title = buildChatTitle(chatMessages);
       const conversation = {
-        id: Date.now(),
+        id: currentChatId,
         title,
+        preview: buildChatPreview(chatMessages),
         createdAt: new Date().toISOString(),
         messages: chatMessages
       };
-      setChatHistory(prev => [conversation, ...prev]);
+      setChatHistory(prev => limitHistory([conversation, ...prev.filter(c => c.id !== currentChatId)]));
     }
     setChatMessages(getDefaultChatMessages());
+    setCurrentChatId(Date.now());
     setChatInput('');
-  }, [chatMessages]);
+  }, [chatMessages, currentChatId]);
 
   const handleOpenChatFromHistory = useCallback((conversation) => {
     if (!conversation) return;
     setChatMessages(conversation.messages || getDefaultChatMessages());
+    setCurrentChatId(conversation.id);
     setShowChatHistory(false);
   }, []);
 
@@ -1068,6 +1081,42 @@ const JornalismoApp = () => {
                 <div className="flex-1">
                   <p className="font-semibold text-jorna-brown">{conv.title || 'Conversa'}</p>
                   <p className="text-xs text-gray-500 mt-1">{new Date(conv.createdAt).toLocaleString()}</p>
+                  {conv.preview && (
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{conv.preview}</p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-2 text-xs text-gray-500">
+                  {currentChatId === conv.id && (
+                    <span className="px-2 py-0.5 rounded-full bg-jorna-100 text-jorna-700 text-[11px]">Atual</span>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setChatMessages(conv.messages || getDefaultChatMessages());
+                        setCurrentChatId(Date.now());
+                        setShowChatHistory(false);
+                      }}
+                      className="px-2 py-1 rounded-full border border-gray-200 hover:bg-gray-100"
+                    >
+                      Duplicar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setChatHistory(prev => prev.filter(c => c.id !== conv.id));
+                        if (currentChatId === conv.id) {
+                          setChatMessages(getDefaultChatMessages());
+                          setCurrentChatId(Date.now());
+                        }
+                      }}
+                      className="px-2 py-1 rounded-full border border-red-200 text-red-500 hover:bg-red-50"
+                    >
+                      Apagar
+                    </button>
+                  </div>
                 </div>
               </button>
             ))}
