@@ -1918,6 +1918,7 @@ const JornalismoApp = () => {
         onSaveFonte={saveFonte}
         onSaveTemplate={saveTemplate}
       />
+      {renderChatHistory()}
     </div>
   );
 };
