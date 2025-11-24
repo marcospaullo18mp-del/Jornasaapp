@@ -1772,17 +1772,22 @@ const JornalismoApp = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-20">
       <div className="bg-gradient-to-r from-jorna-600 to-jorna-700 text-white p-4 shadow-lg">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-row items-center justify-between text-center gap-3 md:gap-6 md:items-center md:justify-between md:text-center">
-            <div className="flex items-center justify-start w-1/4 md:w-1/4 md:pl-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
-                <img src="/2.png" alt="Jornasa" className="w-full h-full object-contain" />
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex flex-row items-center justify-between text-center gap-3 md:gap-6 md:items-center md:justify-between md:text-center">
+              <div className="flex items-center justify-start w-1/4 md:w-1/4 md:pl-4">
+                <button
+                  onClick={() => { setCurrentView('home'); setShowNotifications(false); setShowProfileMenu(false); }}
+                  className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-lg hover:bg-white/10 transition"
+                  aria-label="Ir para a página inicial"
+                  type="button"
+                >
+                  <img src="/2.png" alt="Jornasa" className="w-full h-full object-contain" />
+                </button>
               </div>
-            </div>
-            <div className="flex flex-col items-center justify-center gap-0.5 flex-1 text-center">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Olá, amorecos!</h1>
-              <p className="text-xs md:text-sm text-white/80">Bem-vindo(a) de volta.</p>
-            </div>
+              <div className="flex flex-col items-center justify-center gap-0.5 flex-1 text-center">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Olá, amorecos!</h1>
+                <p className="text-xs md:text-sm text-white/80">Bem-vindo(a) de volta.</p>
+              </div>
             <div className="flex items-start md:items-center justify-end gap-3 w-1/4 md:w-1/4">
               <div className="relative mt-4 md:mt-0">
                 <button
