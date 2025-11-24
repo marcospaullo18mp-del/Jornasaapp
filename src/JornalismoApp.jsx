@@ -80,6 +80,7 @@ const getDefaultChatMessages = () => ([
     isHTML: true
   }
 ]);
+const getDefaultNotifications = () => [];
 const buildChatTitle = (messages = []) => {
   const firstUser = messages.find(m => m.role === 'user');
   if (firstUser?.content) {
@@ -653,22 +654,7 @@ const JornalismoApp = () => {
   const [searchTermFontes, setSearchTermFontes] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [formData, setFormData] = useState({});
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      titulo: 'Deadline amanhã',
-      descricao: 'A matéria política local vence em 24h.',
-      read: false,
-      data: 'Hoje'
-    },
-    {
-      id: 2,
-      titulo: 'Fonte respondeu',
-      descricao: 'Maria Santos retornou com novos dados.',
-      read: false,
-      data: 'Ontem'
-    }
-  ]);
+  const [notifications, setNotifications] = useState(getDefaultNotifications);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationButtonRef = useRef(null);
   const notificationPanelRef = useRef(null);
@@ -776,6 +762,9 @@ const JornalismoApp = () => {
       const savedHistory = localStorage.getItem(makeUserKey(userId, 'chatHistory'));
       setChatHistory(savedHistory ? JSON.parse(savedHistory) : []);
       setCurrentChatId(Date.now());
+
+      const savedNotifications = localStorage.getItem(makeUserKey(userId, 'notifications'));
+      setNotifications(savedNotifications ? JSON.parse(savedNotifications) : getDefaultNotifications());
     } catch (error) {
       console.warn('Nao foi possivel carregar dados do usuario', error);
       setPautas(getDefaultPautas());
@@ -784,6 +773,7 @@ const JornalismoApp = () => {
       setChatMessages(getDefaultChatMessages());
       setChatHistory([]);
       setCurrentChatId(Date.now());
+      setNotifications(getDefaultNotifications());
     }
   }, []);
 
@@ -1016,6 +1006,15 @@ const JornalismoApp = () => {
       console.warn('Nao foi possivel salvar histórico de chat', error);
     }
   }, [chatHistory, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    try {
+      localStorage.setItem(makeUserKey(currentUser.id, 'notifications'), JSON.stringify(notifications));
+    } catch (error) {
+      console.warn('Nao foi possivel salvar notificacoes', error);
+    }
+  }, [notifications, currentUser]);
 
   const handleAuthSubmit = useCallback((event) => {
     event?.preventDefault?.();
