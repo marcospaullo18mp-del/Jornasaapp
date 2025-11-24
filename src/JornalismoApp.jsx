@@ -95,6 +95,17 @@ const buildChatPreview = (messages = []) => {
   return text.slice(0, 80);
 };
 const limitHistory = (history = [], max = 20) => history.slice(0, max);
+const Toast = ({ alert, onClose }) => {
+  if (!alert) return null;
+  const color = alert.type === 'error' ? 'bg-red-500' : alert.type === 'success' ? 'bg-green-500' : 'bg-jorna-600';
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full shadow-lg text-white text-sm flex items-center gap-2">
+      <span className={`${color} px-2 py-1 rounded-full text-[11px] uppercase tracking-wide`}>{alert.type || 'info'}</span>
+      <span>{alert.message}</span>
+      <button onClick={onClose} className="ml-2 text-white/80 hover:text-white">×</button>
+    </div>
+  );
+};
 
 const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasChange, filterStatus, onFilterStatusChange, getDaysUntilDeadline, getStatusColor, openModal, deletePauta }) => (
   <div className="p-4 pb-24 sm:pb-20">
@@ -257,6 +268,11 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, o
       </div>
       <h1 className="text-2xl font-bold text-jorna-brown">JornaIA</h1>
       <p className="text-gray-600 text-sm">Seu assistente para organizar pautas, fontes e insights em tempo real.</p>
+      {buscarWeb && (
+        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-jorna-50 text-jorna-700 text-xs font-semibold border border-jorna-100">
+          Busca web ativa
+        </div>
+      )}
       <div className="mt-3 flex justify-center gap-2">
         <button
           onClick={onNewChat}
@@ -677,6 +693,11 @@ const JornalismoApp = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [buscarWeb, setBuscarWeb] = useState(false);
   const [uiAlert, setUiAlert] = useState(null);
+  useEffect(() => {
+    if (!uiAlert) return;
+    const timer = setTimeout(() => setUiAlert(null), 3500);
+    return () => clearTimeout(timer);
+  }, [uiAlert]);
 
   const buildConversationContext = useCallback(() => {
     const recent = chatMessages
@@ -1266,6 +1287,7 @@ const JornalismoApp = () => {
           return;
         }
         console.error('Erro ao enviar mensagem para o backend:', error);
+        setUiAlert({ type: 'error', message: 'Não consegui falar com o serviço agora. Confira a URL da API.' });
         finalizeMessage(
           formatBotResponseText('Não consegui falar com o serviço agora. Confira a URL da API e tente novamente.'),
           true
