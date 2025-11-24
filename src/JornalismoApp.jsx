@@ -224,7 +224,7 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
   </div>
 ));
 
-const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading }) => (
+const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb }) => (
   <div className="p-4 pb-20">
     <div className="mb-6 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-3">
@@ -297,6 +297,18 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, o
           >
             {loading ? 'Enviando...' : 'Enviar'}
           </button>
+        </div>
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <input
+            id="buscar-web"
+            type="checkbox"
+            checked={buscarWeb}
+            onChange={(e) => onToggleBuscarWeb(e.target.checked)}
+            className="w-4 h-4 text-jorna-600 border-gray-300 rounded focus:ring-jorna-500"
+          />
+          <label htmlFor="buscar-web" className="text-sm text-gray-600 select-none">
+            Buscar na web (quando necessário)
+          </label>
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
           Inteligência Artificial de alto nível treinada para Jornalistas
@@ -638,6 +650,7 @@ const JornalismoApp = () => {
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [buscarWeb, setBuscarWeb] = useState(false);
 
   const buildConversationContext = useCallback(() => {
     const recent = chatMessages
@@ -1209,7 +1222,7 @@ const JornalismoApp = () => {
         const response = await fetch(ACOLHEIA_API_URL, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ mensagem: payloadMessage }),
+          body: JSON.stringify({ mensagem: payloadMessage, buscar_web: buscarWeb }),
           signal: controller.signal
         });
 
@@ -1233,7 +1246,7 @@ const JornalismoApp = () => {
         );
       }
     })();
-  }, [chatInput, chatLoading, buildConversationContext]);
+  }, [chatInput, chatLoading, buildConversationContext, buscarWeb]);
 
   const toggleProfileMenu = useCallback(() => {
     setShowProfileMenu(prev => !prev);
@@ -1899,6 +1912,8 @@ const JornalismoApp = () => {
             onNewChat={handleNewChat}
             onOpenHistory={() => setShowChatHistory(true)}
             historyCount={chatHistory.length}
+            buscarWeb={buscarWeb}
+            onToggleBuscarWeb={setBuscarWeb}
             loading={chatLoading}
           />
         )}
