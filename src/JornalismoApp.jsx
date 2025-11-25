@@ -1,6 +1,7 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import officialSources from './officialSources.json';
 import { Plus, Search, FileText, Users, BookOpen, User, Bell, Clock, Edit2, Trash2, X, MessageCircle } from 'lucide-react';
+import { loadPautas, criarPauta, atualizarPauta, deletarPauta as deletarPautaApi } from './services/pautasService';
 
 const officialDomainSuffixes = [
   '.gov.br',
@@ -108,7 +109,7 @@ const Toast = ({ alert, onClose }) => {
   );
 };
 
-const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasChange, filterStatus, onFilterStatusChange, getDaysUntilDeadline, getStatusColor, openModal, deletePauta }) => (
+const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasChange, filterStatus, onFilterStatusChange, getDaysUntilDeadline, getStatusColor, openModal, deletePauta, loading }) => (
   <div className="p-4 pb-24 sm:pb-20">
     <div className="mb-6">
       <h1 className="text-2xl font-bold text-jorna-brown mb-4">Minhas Pautas</h1>
@@ -136,7 +137,20 @@ const HomeView = memo(({ filteredPautas, searchTermPautas, onSearchTermPautasCha
       </div>
     </div>
 
-    {filteredPautas.length === 0 ? (
+    {loading ? (
+      <div className="space-y-3">
+        {[1, 2].map((i) => (
+          <div key={i} className="bg-white rounded-lg shadow p-4 border border-gray-100 animate-pulse space-y-3">
+            <div className="h-4 w-1/2 bg-gray-200 rounded" />
+            <div className="h-3 w-5/6 bg-gray-100 rounded" />
+            <div className="flex gap-2">
+              <span className="h-6 w-20 bg-gray-100 rounded-full" />
+              <span className="h-6 w-16 bg-gray-100 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : filteredPautas.length === 0 ? (
       <div className="bg-white rounded-2xl shadow p-6 text-center border border-dashed border-gray-200">
         <p className="text-sm text-gray-600">Nenhuma pauta por aqui.</p>
         <button
@@ -641,6 +655,7 @@ const JornalismoApp = () => {
   const [pautas, setPautas] = useState(getDefaultPautas);
   const [fontes, setFontes] = useState(getDefaultFontes);
   const [templates, setTemplates] = useState(getDefaultTemplates);
+  const [loadingPautas, setLoadingPautas] = useState(false);
   const [guias] = useState([
     { id: 1, titulo: 'Como Verificar Fontes', conteudo: '1. Cheque credenciais\n2. Busque fontes oficiais\n3. Cruzar informações\n4. Verificar histórico' },
     { id: 2, titulo: 'Técnicas de Entrevista', conteudo: '1. Prepare perguntas\n2. Escuta ativa\n3. Perguntas abertas\n4. Follow-up' },
@@ -744,11 +759,12 @@ const JornalismoApp = () => {
     }
   }, []);
 
-  const loadUserData = useCallback((userId) => {
+  const loadUserData = useCallback(async (userId) => {
     if (!userId) return;
     try {
-      const savedPautas = localStorage.getItem(makeUserKey(userId, 'pautas'));
-      setPautas(savedPautas ? JSON.parse(savedPautas) : getDefaultPautas());
+      setLoadingPautas(true);
+      const fetchedPautas = await loadPautas(userId);
+      setPautas(fetchedPautas || getDefaultPautas());
 
       const savedFontes = localStorage.getItem(makeUserKey(userId, 'fontes'));
       setFontes(savedFontes ? JSON.parse(savedFontes) : getDefaultFontes());
@@ -765,6 +781,7 @@ const JornalismoApp = () => {
 
       const savedNotifications = localStorage.getItem(makeUserKey(userId, 'notifications'));
       setNotifications(savedNotifications ? JSON.parse(savedNotifications) : getDefaultNotifications());
+      setLoadingPautas(false);
     } catch (error) {
       console.warn('Nao foi possivel carregar dados do usuario', error);
       setPautas(getDefaultPautas());
@@ -774,6 +791,7 @@ const JornalismoApp = () => {
       setChatHistory([]);
       setCurrentChatId(Date.now());
       setNotifications(getDefaultNotifications());
+      setLoadingPautas(false);
     }
   }, []);
 
@@ -1396,21 +1414,34 @@ const JornalismoApp = () => {
     return () => document.removeEventListener('mousedown', handleClickOutsideProfile);
   }, [showProfileMenu]);
 
-  const savePauta = useCallback(() => {
-    const novaPauta = {
-      id: editingItem ? editingItem.id : Date.now(),
+  const savePauta = useCallback(async () => {
+    if (!currentUser?.id) {
+      setUiAlert({ type: 'error', message: 'Faça login para salvar pautas.' });
+      return;
+    }
+
+    const payload = {
       titulo: formData.titulo || '',
       deadline: formData.deadline || '',
       status: formData.status || 'pendente',
       descricao: formData.descricao || ''
     };
-    if (editingItem) {
-      setPautas(prev => prev.map(p => p.id === editingItem.id ? novaPauta : p));
-    } else {
-      setPautas(prev => [...prev, novaPauta]);
+
+    try {
+      if (editingItem) {
+        const updated = await atualizarPauta(editingItem.id, currentUser.id, payload);
+        setPautas(prev => prev.map(p => p.id === editingItem.id ? updated : p));
+      } else {
+        const created = await criarPauta(currentUser.id, payload);
+        setPautas(prev => [created, ...prev]);
+      }
+      closeModal();
+      setUiAlert({ type: 'success', message: 'Pauta salva no Supabase.' });
+    } catch (error) {
+      console.warn('Erro ao salvar pauta no Supabase', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível salvar a pauta.' });
     }
-    closeModal();
-  }, [editingItem, formData, closeModal]);
+  }, [editingItem, formData, closeModal, currentUser]);
 
   const saveFonte = useCallback(() => {
     const novaFonte = {
@@ -1445,9 +1476,17 @@ const JornalismoApp = () => {
     closeModal();
   }, [editingItem, formData, closeModal]);
 
-  const deletePauta = useCallback((id) => {
-    setPautas(pautas.filter(p => p.id !== id));
-  }, [pautas]);
+  const deletePauta = useCallback(async (id) => {
+    if (!currentUser?.id) return;
+    try {
+      await deletarPautaApi(id, currentUser.id);
+      setPautas(prev => prev.filter(p => p.id !== id));
+      setUiAlert({ type: 'success', message: 'Pauta removida.' });
+    } catch (error) {
+      console.warn('Erro ao remover pauta', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível remover a pauta.' });
+    }
+  }, [currentUser]);
 
   const deleteFonte = useCallback((id) => {
     setFontes(fontes.filter(f => f.id !== id));
@@ -1954,7 +1993,7 @@ const JornalismoApp = () => {
       </div>
 
       <div className="max-w-6xl mx-auto pb-16 px-4">
-        {currentView === 'home' && <HomeView filteredPautas={filteredPautas} searchTermPautas={searchTermPautas} onSearchTermPautasChange={handleSetSearchTermPautas} filterStatus={filterStatus} onFilterStatusChange={handleSetFilterStatus} getDaysUntilDeadline={getDaysUntilDeadline} getStatusColor={getStatusColor} openModal={openModal} deletePauta={deletePauta} />}
+        {currentView === 'home' && <HomeView filteredPautas={filteredPautas} searchTermPautas={searchTermPautas} onSearchTermPautasChange={handleSetSearchTermPautas} filterStatus={filterStatus} onFilterStatusChange={handleSetFilterStatus} getDaysUntilDeadline={getDaysUntilDeadline} getStatusColor={getStatusColor} openModal={openModal} deletePauta={deletePauta} loading={loadingPautas} />}
         {currentView === 'chatbot' && (
           <ChatbotView
             messages={chatMessages}
