@@ -4,6 +4,7 @@ import { Plus, Search, FileText, Users, BookOpen, User, Bell, Clock, Edit2, Tras
 import { loadPautas, criarPauta, atualizarPauta, deletarPauta as deletarPautaApi } from './services/pautasService';
 import { loadFontes, criarFonte, atualizarFonte, deletarFonte as deletarFonteApi } from './services/fontesService';
 import { loadTemplates, criarTemplate, atualizarTemplate, deletarTemplate as deletarTemplateApi } from './services/templatesService';
+import { loadConversas, loadMensagens, criarConversa, atualizarConversa, inserirMensagem, deletarConversa } from './services/chatService';
 
 const officialDomainSuffixes = [
   '.gov.br',
@@ -277,7 +278,7 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
   </div>
 ));
 
-const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb }) => (
+const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb }) => (
   <div className="p-4 pb-20">
     <div className="mb-6 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-3">
@@ -310,7 +311,15 @@ const ChatbotView = memo(({ messages, chatInput, onInputChange, onSendMessage, o
 
     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col min-h-[60vh]">
       <div className="flex-1 bg-gradient-to-b from-jorna-50/60 to-white p-4 space-y-3 overflow-y-auto max-h-[60vh]">
-        {messages.map(message => (
+        {messagesLoading ? (
+          <div className="space-y-3">
+            {[1,2].map(i => (
+              <div key={i} className="flex justify-start">
+                <div className="w-3/4 h-16 bg-white border border-gray-100 rounded-2xl shadow-sm animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : messages.map(message => (
           <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-full sm:max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
               message.role === 'user' ? 'bg-jorna-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border'
@@ -692,6 +701,7 @@ const JornalismoApp = () => {
   ]);
   const [chatHistory, setChatHistory] = useState([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatMessagesLoading, setChatMessagesLoading] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [buscarWeb, setBuscarWeb] = useState(false);
@@ -761,6 +771,64 @@ const JornalismoApp = () => {
     }
   }, []);
 
+  const loadMessagesForConversation = useCallback(async (conversation) => {
+    if (!conversation || !conversation.id || !currentUser?.id) return;
+    try {
+      setChatMessagesLoading(true);
+      const msgs = await loadMensagens(conversation.id, currentUser.id);
+      setChatMessages(msgs && msgs.length ? msgs.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        isHTML: m.is_html,
+        pending: false
+      })) : getDefaultChatMessages());
+      setCurrentChatId(conversation.id);
+    } catch (error) {
+      console.warn('Erro ao carregar mensagens', error);
+      setChatMessages(getDefaultChatMessages());
+      setCurrentChatId(conversation.id);
+    } finally {
+      setChatMessagesLoading(false);
+    }
+  }, [currentUser]);
+
+  const ensureConversation = useCallback(async (userId, existingConvs) => {
+    if (existingConvs && existingConvs.length > 0) {
+      return existingConvs[0];
+    }
+    const created = await criarConversa(userId, 'Nova conversa', '');
+    return created;
+  }, []);
+
+  const updateConversationInHistory = useCallback((conversaId, updates) => {
+    setChatHistory(prev => {
+      const existing = prev.find(c => c.id === conversaId);
+      const updated = existing ? { ...existing, ...updates } : { id: conversaId, ...updates };
+      return [updated, ...prev.filter(c => c.id !== conversaId)];
+    });
+  }, []);
+
+  const handleDeleteConversation = useCallback(async (conversaId) => {
+    if (!currentUser?.id) return;
+    try {
+      await deletarConversa(conversaId, currentUser.id);
+      setChatHistory(prev => prev.filter(c => c.id !== conversaId));
+      if (currentChatId === conversaId) {
+        // fallback: carregar próxima conversa ou criar nova
+        const convs = await loadConversas(currentUser.id);
+        setChatHistory(convs || []);
+        const next = convs && convs.length ? convs[0] : await ensureConversation(currentUser.id, convs);
+        setCurrentChatId(next?.id || Date.now());
+        await loadMessagesForConversation(next);
+      }
+      setUiAlert({ type: 'success', message: 'Conversa removida.' });
+    } catch (error) {
+      console.warn('Erro ao remover conversa', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível remover a conversa.' });
+    }
+  }, [currentUser, currentChatId, ensureConversation, loadMessagesForConversation]);
+
   const loadUserData = useCallback(async (userId) => {
     if (!userId) return;
     try {
@@ -774,12 +842,12 @@ const JornalismoApp = () => {
       const fetchedTemplates = await loadTemplates(userId);
       setTemplates(fetchedTemplates || getDefaultTemplates());
 
-      const savedChat = localStorage.getItem(makeUserKey(userId, 'chat'));
-      setChatMessages(savedChat ? JSON.parse(savedChat) : getDefaultChatMessages());
-
-      const savedHistory = localStorage.getItem(makeUserKey(userId, 'chatHistory'));
-      setChatHistory(savedHistory ? JSON.parse(savedHistory) : []);
-      setCurrentChatId(Date.now());
+      const conversas = await loadConversas(userId);
+      const hasConvs = conversas && conversas.length > 0;
+      const conversaAtual = await ensureConversation(userId, conversas);
+      setChatHistory(hasConvs ? conversas : (conversaAtual ? [conversaAtual] : []));
+      setCurrentChatId(conversaAtual?.id || Date.now());
+      await loadMessagesForConversation(conversaAtual);
 
       const savedNotifications = localStorage.getItem(makeUserKey(userId, 'notifications'));
       setNotifications(savedNotifications ? JSON.parse(savedNotifications) : getDefaultNotifications());
@@ -985,24 +1053,6 @@ const JornalismoApp = () => {
   useEffect(() => {
     if (!currentUser?.id) return;
     try {
-      localStorage.setItem(makeUserKey(currentUser.id, 'chat'), JSON.stringify(chatMessages));
-    } catch (error) {
-      console.warn('Nao foi possivel salvar chat', error);
-    }
-  }, [chatMessages, currentUser]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    try {
-      localStorage.setItem(makeUserKey(currentUser.id, 'chatHistory'), JSON.stringify(chatHistory));
-    } catch (error) {
-      console.warn('Nao foi possivel salvar histórico de chat', error);
-    }
-  }, [chatHistory, currentUser]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    try {
       localStorage.setItem(makeUserKey(currentUser.id, 'notifications'), JSON.stringify(notifications));
     } catch (error) {
       console.warn('Nao foi possivel salvar notificacoes', error);
@@ -1087,29 +1137,28 @@ const JornalismoApp = () => {
     setChatInput(value);
   }, []);
 
-  const handleNewChat = useCallback(() => {
-    if (chatMessages.length > 1) {
-      const title = buildChatTitle(chatMessages);
-      const conversation = {
-        id: currentChatId,
-        title,
-        preview: buildChatPreview(chatMessages),
-        createdAt: new Date().toISOString(),
-        messages: chatMessages
-      };
-      setChatHistory(prev => limitHistory([conversation, ...prev.filter(c => c.id !== currentChatId)]));
+  const handleNewChat = useCallback(async () => {
+    if (!currentUser?.id) {
+      setUiAlert({ type: 'error', message: 'Faça login para criar conversa.' });
+      return;
     }
-    setChatMessages(getDefaultChatMessages());
-    setCurrentChatId(Date.now());
-    setChatInput('');
-  }, [chatMessages, currentChatId]);
+    try {
+      const conversa = await criarConversa(currentUser.id, 'Nova conversa', '');
+      setChatHistory(prev => [conversa, ...prev]);
+      setCurrentChatId(conversa.id);
+      setChatMessages(getDefaultChatMessages());
+      setChatInput('');
+    } catch (error) {
+      console.warn('Erro ao criar conversa', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível criar nova conversa.' });
+    }
+  }, [currentUser]);
 
   const handleOpenChatFromHistory = useCallback((conversation) => {
     if (!conversation) return;
-    setChatMessages(conversation.messages || getDefaultChatMessages());
-    setCurrentChatId(conversation.id);
+    loadMessagesForConversation(conversation);
     setShowChatHistory(false);
-  }, []);
+  }, [loadMessagesForConversation]);
 
   const renderChatHistory = () => {
     if (!showChatHistory) return null;
@@ -1138,7 +1187,7 @@ const JornalismoApp = () => {
               >
                 <div className="flex-1">
                   <p className="font-semibold text-jorna-brown">{conv.title || 'Conversa'}</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(conv.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(conv.created_at || conv.createdAt || Date.now()).toLocaleString()}</p>
                   {conv.preview && (
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">{conv.preview}</p>
                   )}
@@ -1147,34 +1196,16 @@ const JornalismoApp = () => {
                   {currentChatId === conv.id && (
                     <span className="px-2 py-0.5 rounded-full bg-jorna-100 text-jorna-700 text-[11px]">Atual</span>
                   )}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setChatMessages(conv.messages || getDefaultChatMessages());
-                        setCurrentChatId(Date.now());
-                        setShowChatHistory(false);
-                      }}
-                      className="px-2 py-1 rounded-full border border-gray-200 hover:bg-gray-100"
-                    >
-                      Duplicar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setChatHistory(prev => prev.filter(c => c.id !== conv.id));
-                        if (currentChatId === conv.id) {
-                          setChatMessages(getDefaultChatMessages());
-                          setCurrentChatId(Date.now());
-                        }
-                      }}
-                      className="px-2 py-1 rounded-full border border-red-200 text-red-500 hover:bg-red-50"
-                    >
-                      Apagar
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteConversation(conv.id);
+                    }}
+                    className="px-2 py-1 rounded-full border border-red-200 text-red-500 hover:bg-red-50"
+                  >
+                    Apagar
+                  </button>
                 </div>
               </button>
             ))}
@@ -1184,9 +1215,27 @@ const JornalismoApp = () => {
     );
   };
 
-  const sendChatMessage = useCallback(() => {
+  const sendChatMessage = useCallback(async () => {
     const trimmed = chatInput.trim();
     if (!trimmed || chatLoading) return;
+    if (!currentUser?.id) {
+      setUiAlert({ type: 'error', message: 'Faça login para enviar mensagens.' });
+      return;
+    }
+
+    let conversaId = currentChatId;
+    if (!conversaId || typeof conversaId === 'undefined') {
+      try {
+        const nova = await criarConversa(currentUser.id, buildChatTitle([{ role: 'user', content: trimmed }]), buildChatPreview([{ content: trimmed }]));
+        conversaId = nova.id;
+        setCurrentChatId(nova.id);
+        setChatHistory(prev => [nova, ...prev]);
+      } catch (err) {
+        console.warn('Erro ao criar conversa antes do envio', err);
+        setUiAlert({ type: 'error', message: 'Não foi possível iniciar a conversa.' });
+        return;
+      }
+    }
 
     const contextSnippet = buildConversationContext();
     const continuationHint =
@@ -1231,6 +1280,15 @@ const JornalismoApp = () => {
     setChatInput('');
     setChatLoading(true);
 
+    (async () => {
+      try {
+        await inserirMensagem(conversaId, currentUser.id, { role: 'user', content: trimmed, is_html: false });
+        updateConversationInHistory(conversaId, { title: buildChatTitle([userMessage]), preview: buildChatPreview([userMessage]) });
+      } catch (err) {
+        console.warn('Erro ao registrar mensagem do usuário', err);
+      }
+    })();
+
     const finalizeMessage = (content, isHTML = true) => {
       setChatMessages(prev =>
         prev.map(message =>
@@ -1241,6 +1299,17 @@ const JornalismoApp = () => {
       );
       pendingBotIdRef.current = null;
       setChatLoading(false);
+      (async () => {
+        try {
+          await inserirMensagem(conversaId, currentUser.id, { role: 'bot', content, is_html: isHTML });
+          updateConversationInHistory(conversaId, {
+            title: buildChatTitle([{ role: 'user', content: trimmed }]),
+            preview: buildChatPreview([{ content }])
+          });
+        } catch (err) {
+          console.warn('Erro ao registrar resposta do bot', err);
+        }
+      })();
     };
 
     const cachedReply = chatCacheRef.current.get(normalizedKey);
@@ -2004,6 +2073,7 @@ const JornalismoApp = () => {
         {currentView === 'chatbot' && (
           <ChatbotView
             messages={chatMessages}
+            messagesLoading={chatMessagesLoading}
             chatInput={chatInput}
             onInputChange={handleChatInputChange}
             onSendMessage={sendChatMessage}
