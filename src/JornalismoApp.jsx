@@ -2,6 +2,8 @@ import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import officialSources from './officialSources.json';
 import { Plus, Search, FileText, Users, BookOpen, User, Bell, Clock, Edit2, Trash2, X, MessageCircle } from 'lucide-react';
 import { loadPautas, criarPauta, atualizarPauta, deletarPauta as deletarPautaApi } from './services/pautasService';
+import { loadFontes, criarFonte, atualizarFonte, deletarFonte as deletarFonteApi } from './services/fontesService';
+import { loadTemplates, criarTemplate, atualizarTemplate, deletarTemplate as deletarTemplateApi } from './services/templatesService';
 
 const officialDomainSuffixes = [
   '.gov.br',
@@ -766,11 +768,11 @@ const JornalismoApp = () => {
       const fetchedPautas = await loadPautas(userId);
       setPautas(fetchedPautas || getDefaultPautas());
 
-      const savedFontes = localStorage.getItem(makeUserKey(userId, 'fontes'));
-      setFontes(savedFontes ? JSON.parse(savedFontes) : getDefaultFontes());
+      const fetchedFontes = await loadFontes(userId);
+      setFontes(fetchedFontes || getDefaultFontes());
 
-      const savedTemplates = localStorage.getItem(makeUserKey(userId, 'templates'));
-      setTemplates(savedTemplates ? JSON.parse(savedTemplates) : getDefaultTemplates());
+      const fetchedTemplates = await loadTemplates(userId);
+      setTemplates(fetchedTemplates || getDefaultTemplates());
 
       const savedChat = localStorage.getItem(makeUserKey(userId, 'chat'));
       setChatMessages(savedChat ? JSON.parse(savedChat) : getDefaultChatMessages());
@@ -979,33 +981,6 @@ const JornalismoApp = () => {
       }
     };
   }, [handleGoogleCredential]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    try {
-      localStorage.setItem(makeUserKey(currentUser.id, 'pautas'), JSON.stringify(pautas));
-    } catch (error) {
-      console.warn('Nao foi possivel salvar pautas', error);
-    }
-  }, [pautas, currentUser]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    try {
-      localStorage.setItem(makeUserKey(currentUser.id, 'fontes'), JSON.stringify(fontes));
-    } catch (error) {
-      console.warn('Nao foi possivel salvar fontes', error);
-    }
-  }, [fontes, currentUser]);
-
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    try {
-      localStorage.setItem(makeUserKey(currentUser.id, 'templates'), JSON.stringify(templates));
-    } catch (error) {
-      console.warn('Nao foi possivel salvar templates', error);
-    }
-  }, [templates, currentUser]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -1443,38 +1418,62 @@ const JornalismoApp = () => {
     }
   }, [editingItem, formData, closeModal, currentUser]);
 
-  const saveFonte = useCallback(() => {
-    const novaFonte = {
-      id: editingItem ? editingItem.id : Date.now(),
+  const saveFonte = useCallback(async () => {
+    if (!currentUser?.id) {
+      setUiAlert({ type: 'error', message: 'Faça login para salvar fontes.' });
+      return;
+    }
+
+    const payload = {
       nome: formData.nome || '',
       cargo: formData.cargo || '',
       contato: formData.contato || '',
       categoria: formData.categoria || '',
-      oficial: editingItem ? editingItem.oficial : false
+      oficial: formData.oficial || false
     };
-    if (editingItem) {
-      setFontes(prev => prev.map(f => f.id === editingItem.id ? novaFonte : f));
-    } else {
-      setFontes(prev => [...prev, novaFonte]);
-    }
-    closeModal();
-  }, [editingItem, formData, closeModal]);
 
-  const saveTemplate = useCallback(() => {
-    const novoTemplate = {
-      id: editingItem ? editingItem.id : Date.now(),
+    try {
+      if (editingItem) {
+        const updated = await atualizarFonte(editingItem.id, currentUser.id, payload);
+        setFontes(prev => prev.map(f => f.id === editingItem.id ? updated : f));
+      } else {
+        const created = await criarFonte(currentUser.id, payload);
+        setFontes(prev => [created, ...prev]);
+      }
+      closeModal();
+      setUiAlert({ type: 'success', message: 'Fonte salva no Supabase.' });
+    } catch (error) {
+      console.warn('Erro ao salvar fonte', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível salvar a fonte.' });
+    }
+  }, [editingItem, formData, closeModal, currentUser]);
+
+  const saveTemplate = useCallback(async () => {
+    if (!currentUser?.id) {
+      setUiAlert({ type: 'error', message: 'Faça login para salvar templates.' });
+      return;
+    }
+
+    const payload = {
       nome: formData.nome || 'Novo Template',
       conteudo: formData.conteudo || ''
     };
 
-    if (editingItem) {
-      setTemplates(prev => prev.map(template => template.id === editingItem.id ? novoTemplate : template));
-    } else {
-      setTemplates(prev => [...prev, novoTemplate]);
+    try {
+      if (editingItem) {
+        const updated = await atualizarTemplate(editingItem.id, currentUser.id, payload);
+        setTemplates(prev => prev.map(template => template.id === editingItem.id ? updated : template));
+      } else {
+        const created = await criarTemplate(currentUser.id, payload);
+        setTemplates(prev => [created, ...prev]);
+      }
+      closeModal();
+      setUiAlert({ type: 'success', message: 'Template salvo no Supabase.' });
+    } catch (error) {
+      console.warn('Erro ao salvar template', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível salvar o template.' });
     }
-
-    closeModal();
-  }, [editingItem, formData, closeModal]);
+  }, [editingItem, formData, closeModal, currentUser]);
 
   const deletePauta = useCallback(async (id) => {
     if (!currentUser?.id) return;
@@ -1488,9 +1487,17 @@ const JornalismoApp = () => {
     }
   }, [currentUser]);
 
-  const deleteFonte = useCallback((id) => {
-    setFontes(fontes.filter(f => f.id !== id));
-  }, [fontes]);
+  const deleteFonte = useCallback(async (id) => {
+    if (!currentUser?.id) return;
+    try {
+      await deletarFonteApi(id, currentUser.id);
+      setFontes(prev => prev.filter(f => f.id !== id));
+      setUiAlert({ type: 'success', message: 'Fonte removida.' });
+    } catch (error) {
+      console.warn('Erro ao remover fonte', error);
+      setUiAlert({ type: 'error', message: 'Não foi possível remover a fonte.' });
+    }
+  }, [currentUser]);
 
   const getStatusColor = useCallback((status) => {
     switch(status) {
