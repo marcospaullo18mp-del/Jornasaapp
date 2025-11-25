@@ -1,7 +1,6 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import officialSources from './officialSources.json';
 import { Plus, Search, FileText, Users, BookOpen, User, Bell, Clock, Edit2, Trash2, X, MessageCircle } from 'lucide-react';
-import { supabase } from './supabaseClient';
 
 const officialDomainSuffixes = [
   '.gov.br',
@@ -1119,17 +1118,6 @@ const JornalismoApp = () => {
     setShowChatHistory(false);
   }, []);
 
-  const handleTestSupabase = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.from('pautas').select('*').limit(1);
-      if (error) throw error;
-      setUiAlert({ type: 'success', message: `Supabase ok: ${data?.length || 0} registros` });
-    } catch (error) {
-      console.warn('Teste Supabase falhou', error);
-      setUiAlert({ type: 'error', message: 'Supabase indisponível ou env inválida' });
-    }
-  }, []);
-
   const renderChatHistory = () => {
     if (!showChatHistory) return null;
     return (
@@ -1845,14 +1833,6 @@ const JornalismoApp = () => {
               <div className="flex flex-col items-center justify-center gap-0.5 flex-1 text-center">
                 <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Olá, amorecos!</h1>
                 <p className="text-xs md:text-sm text-white/80">Bem-vindo(a) de volta.</p>
-                <button
-                  type="button"
-                  onClick={handleTestSupabase}
-                  className="mt-2 inline-flex items-center gap-2 px-3 py-1 text-[12px] bg-white/10 text-white rounded-full hover:bg-white/20 transition"
-                >
-                  <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
-                  Testar Supabase
-                </button>
               </div>
             <div className="flex items-start md:items-center justify-end gap-3 w-1/4 md:w-1/4">
               <div className="relative mt-4 md:mt-0">
