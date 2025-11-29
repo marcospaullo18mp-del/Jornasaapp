@@ -17,7 +17,7 @@ const officialDomainSuffixes = [
 ];
 
 // Base do backend publicado (ajuste VITE_ACOLHEIA_API_URL no .env para outro ambiente)
-const ACOLHEIA_API_URL = import.meta.env.VITE_ACOLHEIA_API_URL || 'https://usual-crista-12ba-8e4b7103.koyeb.app/mensagem';
+const ACOLHEIA_API_URL = import.meta.env.VITE_ACOLHEIA_API_URL || 'https://jornasa-worker.jornabot.workers.dev/mensagem';
 const ACOLHEIA_API_KEY = import.meta.env.VITE_ACOLHEIA_KEY || '';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://usual-crista-12ba-8e4b7103.koyeb.app';
 
