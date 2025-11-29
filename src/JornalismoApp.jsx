@@ -1349,6 +1349,9 @@ const JornalismoApp = () => {
         if (ACOLHEIA_API_KEY) {
           headers['x-jornasa-key'] = ACOLHEIA_API_KEY;
         }
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
 
         const response = await fetch(ACOLHEIA_API_URL, {
           method: 'POST',
@@ -1378,7 +1381,7 @@ const JornalismoApp = () => {
         );
       }
     })();
-  }, [chatInput, chatLoading, buildConversationContext, buscarWeb]);
+  }, [authToken, chatInput, chatLoading, buildConversationContext, buscarWeb]);
 
   const toggleProfileMenu = useCallback(() => {
     setShowProfileMenu(prev => !prev);
