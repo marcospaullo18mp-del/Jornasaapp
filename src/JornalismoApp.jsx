@@ -279,7 +279,7 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
   </div>
 ));
 
-const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb }) => (
+const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb, chatListRef }) => (
   <div className="p-4 pb-20">
     <div className="mb-6 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-3">
@@ -311,7 +311,7 @@ const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange,
     </div>
 
     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex flex-col min-h-[60vh]">
-      <div className="flex-1 bg-gradient-to-b from-jorna-50/60 to-white p-4 space-y-3 overflow-y-auto max-h-[60vh]">
+      <div ref={chatListRef} className="flex-1 bg-gradient-to-b from-jorna-50/60 to-white p-4 space-y-3 overflow-y-auto max-h-[60vh]">
         {messagesLoading ? (
           <div className="space-y-3">
             {[1,2].map(i => (
@@ -700,6 +700,7 @@ const JornalismoApp = () => {
   const [chatMessages, setChatMessages] = useState([
     ...getDefaultChatMessages()
   ]);
+  const chatListRef = useRef(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [chatMessagesLoading, setChatMessagesLoading] = useState(false);
@@ -707,6 +708,11 @@ const JornalismoApp = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [buscarWeb, setBuscarWeb] = useState(false);
   const [uiAlert, setUiAlert] = useState(null);
+  useEffect(() => {
+    if (chatListRef.current) {
+      chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
+    }
+  }, [chatMessages, chatMessagesLoading]);
   useEffect(() => {
     if (!uiAlert) return;
     const timer = setTimeout(() => setUiAlert(null), 3500);
@@ -2083,6 +2089,7 @@ const JornalismoApp = () => {
             buscarWeb={buscarWeb}
             onToggleBuscarWeb={setBuscarWeb}
             loading={chatLoading}
+            chatListRef={chatListRef}
           />
         )}
         {currentView === 'fontes' && <FontesView filteredFontes={filteredFontes} searchTermFontes={searchTermFontes} setSearchTermFontes={handleSetSearchTermFontes} openModal={openModal} deleteFonte={deleteFonte} />}
