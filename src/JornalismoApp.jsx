@@ -741,7 +741,7 @@ const JornalismoApp = () => {
 
   const handleSetSearchTermFontes = useCallback((value) => {
     setSearchTermFontes(value);
-  }, [authToken, fetchNotifications, ensureConversation, loadMessagesForConversation]);
+  }, []);
 
   const handleSetFilterStatus = useCallback((value) => {
     setFilterStatus(value);
