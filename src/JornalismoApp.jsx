@@ -106,9 +106,10 @@ const limitHistory = (history = [], max = 20) => history.slice(0, max);
 const Toast = ({ alert, onClose }) => {
   if (!alert) return null;
   const color = alert.type === 'error' ? 'bg-red-500' : alert.type === 'success' ? 'bg-green-500' : 'bg-jorna-600';
+  const label = alert.type === 'success' ? 'Salvo' : (alert.type || 'info');
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full shadow-lg text-white text-sm flex items-center gap-2">
-      <span className={`${color} px-2 py-1 rounded-full text-[11px] uppercase tracking-wide`}>{alert.type || 'info'}</span>
+      <span className={`${color} px-2 py-1 rounded-full text-[11px] uppercase tracking-wide`}>{label}</span>
       <span>{alert.message}</span>
       <button onClick={onClose} className="ml-2 text-white/80 hover:text-white">×</button>
     </div>
