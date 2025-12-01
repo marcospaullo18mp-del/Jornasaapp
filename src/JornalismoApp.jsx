@@ -29,9 +29,35 @@ const stripHtml = (text = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const addProfessionalEmojis = (text = '') => {
+  if (!text) return text;
+  const rules = [
+    { emoji: '✅', pattern: /\b(sucesso|feito|conclu[ií]do)\b/i },
+    { emoji: '⚠️', pattern: /\b(aten[cç][aã]o|alerta|cuidado|atenção)\b/i },
+    { emoji: '❌', pattern: /\b(erro|falha|n[oã]o (foi|consig\w*)|problema)\b/i },
+    { emoji: '💡', pattern: /\b(insight|dica|sugest[aã]o|resumo)\b/i },
+    { emoji: '🛠️', pattern: /\b(ajuste|corrig(ir|ido)|pr[oó]ximos passos|a[cç][aã]o|implementar)\b/i },
+    { emoji: '⏰', pattern: /\b(prazo|deadline|hoje|amanh[ãa]|urgente)\b/i },
+    { emoji: '📚', pattern: /\b(fonte|refer[eê]ncia|documenta[cç][aã]o)\b/i },
+    { emoji: '💬', pattern: /\b(resposta|mensagem|chat|conversa)\b/i },
+  ];
+
+  const used = [];
+  rules.forEach(({ emoji, pattern }) => {
+    if (pattern.test(text) && !used.includes(emoji)) {
+      used.push(emoji);
+    }
+  });
+
+  if (!used.length) return text;
+  return `${used.join(' ')} ${text}`;
+};
+
 const formatBotResponseText = (text = '') => {
   let formatted = text.trim();
   if (!formatted) return '';
+
+  formatted = addProfessionalEmojis(formatted);
 
   formatted = formatted.replace(/(^|\n)\*\s*([^*\n]+)/g, (match, prefix, content) => {
     return `${prefix}<strong>${content.trim()}</strong>`;
