@@ -309,7 +309,7 @@ const FontesView = memo(({ filteredFontes, searchTermFontes, setSearchTermFontes
   </div>
 ));
 
-const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb, chatListRef }) => (
+const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange, onSendMessage, onNewChat, onOpenHistory, historyCount, loading, buscarWeb, onToggleBuscarWeb, chatListRef, chatInputRef }) => (
   <div className="p-4 pb-20">
     <div className="mb-6 text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-3">
@@ -375,6 +375,7 @@ const ChatbotView = memo(({ messages, messagesLoading, chatInput, onInputChange,
       <div className="p-4 border-t bg-white">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
+            ref={chatInputRef}
             type="text"
             value={chatInput}
             onChange={(e) => onInputChange(e.target.value)}
@@ -847,6 +848,7 @@ const JornalismoApp = () => {
   const chatCacheRef = useRef(new Map());
   const pendingBotIdRef = useRef(null);
   const copyTemplateTimeoutRef = useRef(null);
+  const chatInputRef = useRef(null);
   const [copiedTemplateId, setCopiedTemplateId] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [currentChatId, setCurrentChatId] = useState(Date.now());
@@ -1629,7 +1631,13 @@ const JornalismoApp = () => {
     setChatInput(template.conteudo || '');
     const meta = recordTemplateUsage(template.id);
     setTemplates(prev => prev.map(t => t.id === template.id ? { ...t, ...meta } : t));
+    setCurrentView('chatbot');
     setUiAlert({ type: 'success', message: 'Template aplicado no chat.' });
+    requestAnimationFrame(() => {
+      if (chatInputRef.current) {
+        chatInputRef.current.focus();
+      }
+    });
   }, []);
 
   const handleDuplicateTemplate = useCallback(async (template) => {
@@ -2342,6 +2350,7 @@ const JornalismoApp = () => {
             onToggleBuscarWeb={setBuscarWeb}
             loading={chatLoading}
             chatListRef={chatListRef}
+            chatInputRef={chatInputRef}
           />
         )}
         {currentView === 'fontes' && <FontesView filteredFontes={filteredFontes} searchTermFontes={searchTermFontes} setSearchTermFontes={handleSetSearchTermFontes} openModal={openModal} deleteFonte={deleteFonte} />}
