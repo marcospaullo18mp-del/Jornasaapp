@@ -127,7 +127,7 @@ const getDefaultChatMessages = () => ([
   {
     id: 1,
     role: 'bot',
-    content: formatBotResponseText('O futuro do jornalismo começa agora. Bem-vindo ao Jornasa'),
+    content: formatBotResponseText('Olá, amorecos! Sou o JornaIA. Posso ajudar a estruturar pautas, sugerir fontes ou organizar seu workflow. Em que posso ajudar hoje?'),
     isHTML: true
   }
 ]);
@@ -2157,7 +2157,7 @@ const JornalismoApp = () => {
             <div className="flex items-center justify-center">
               <img src="/3.png" alt="Jornasa" className="w-24 h-24 object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-jorna-brown text-center">O futuro do jornalismo começa agora. Bem-vindo ao Jornasa.</h1>
+            <h1 className="text-2xl font-bold text-jorna-brown text-center">Bem-vindo ao JornasaApp</h1>
             <p className="text-gray-600 text-center text-sm">Acesse sua conta para gerenciar pautas e fontes.</p>
           </div>
 
@@ -2267,8 +2267,8 @@ const JornalismoApp = () => {
                 </button>
               </div>
               <div className="flex flex-col items-center justify-center gap-0.5 flex-1 text-center">
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight">Olá, amorecos!</h1>
-                <p className="text-xs md:text-sm text-white/80">Bem-vindo(a) de volta.</p>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight">O futuro do jornalismo começa agora.</h1>
+                <p className="text-xs md:text-sm text-white/80">Bem-vindo ao Jornasa.</p>
               </div>
             <div className="flex items-start md:items-center justify-end gap-3 w-1/4 md:w-1/4">
               <div className="relative mt-4 md:mt-0">
