@@ -15,8 +15,6 @@ const officialDomainSuffixes = [
   '.edu.br',
   '.tc.br'
 ];
-const USE_SUPABASE_DIRECT = import.meta.env.VITE_USE_SUPABASE_DIRECT === '1';
-const DEMO_USER_ID = import.meta.env.VITE_DEMO_USER_ID || 'demo-user';
 
 // Base do backend publicado (ajuste VITE_ACOLHEIA_API_URL no .env para outro ambiente)
 const ACOLHEIA_API_URL = import.meta.env.VITE_ACOLHEIA_API_URL || 'https://jornasa-worker.jornabot.workers.dev/mensagem';
@@ -783,24 +781,6 @@ const JornalismoApp = () => {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
-
-  useEffect(() => {
-    if (USE_SUPABASE_DIRECT && !currentUser) {
-      const demoUser = {
-        id: DEMO_USER_ID,
-        nome: 'Demo User',
-        email: 'demo@demo.com',
-        iniciais: 'DU',
-      };
-      setCurrentUser(demoUser);
-      setAuthToken('demo-token');
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(demoUser));
-      } catch {
-        // ignore
-      }
-    }
-  }, [currentUser]);
 
   const loadMessagesForConversation = useCallback(async (conversation) => {
     if (!conversation || !conversation.id || !authToken) return;
